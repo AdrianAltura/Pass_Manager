@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import messagebox
 import random
 import pyperclip
+import json
 
 
 # PASSWORD GENERATOR
@@ -25,25 +26,49 @@ def pass_gen():
 
 # SAVE PASSWORD
 def save_pass():
-    web = entry_web.get()
+    web = entry_web.get().title()
     user = entry_user.get()
     password = entry_pass.get()
+    new_dict = {
+        web: {
+            'Email/User': user,
+            'Password': password
+        }
+    }
 
-    if len(web) == 0 or len(password) == 0 or len(user) == 0:
+    if len(web) == 0 or len(password) == 0:
         messagebox.showinfo(title='Warning!', message='Please fill empty fields.')
     else:
-        msg = messagebox.askokcancel(title='Please double check',
-                                     message=f'These are the details entered: \nWebsite: {web} \nEmail: {user}'
-                                             f' \nPassword: {password}')
-
-        if msg:
-            with open('Data.txt', 'a') as Data:
-                Data.write(f'Website: {web}, Username/Email: {user}, Password: {password}\n')
+        try:
+            with open('data.json', 'r') as data_file:
+                data = json.load(data_file)
+        except FileNotFoundError:
+            with open('data.json', 'w') as data_file:
+                json.dump(new_dict, data_file, indent=4)
+        else:
+            data.update(new_dict)
+            with open('data.json', 'w') as data_file:
+                json.dump(data, data_file, indent=4)
+        finally:
             entry_web.delete(0, END)
             entry_pass.delete(0, END)
             entry_web.focus()
-        else:
-            entry_web.focus()
+
+
+# Search function
+def search():
+    web = entry_web.get().title()
+    try:
+        with open('data.json', 'r') as data_file:
+            data = json.load(data_file)
+    except FileNotFoundError:
+        messagebox.showinfo(title='Warning!', message='Data file not found.')
+    else:
+        try:
+            messagebox.showinfo(title=web, message=f'Email/user: {data[web]["Email/User"]}\n'
+                                                   f'Password: {data[web]["Password"]}')
+        except KeyError:
+            messagebox.showinfo(title='Warning!', message=f'Details not found for {web}\nPlease save one.')
 
 
 # UI SETUP
@@ -66,25 +91,29 @@ entry_web.grid(column=1, row=1, columnspan=2)
 
 # Label Email/username
 label_user = Label(text='Email/Username:')
-label_user.grid(column=0, row=2)
+label_user.grid(column=0, row=3)
 
 entry_user = Entry(width=35)
 entry_user.insert(END, 'testing@gmail.com')
-entry_user.grid(column=1, row=2, columnspan=2, padx=5, pady=5)
+entry_user.grid(column=1, row=3, columnspan=2)
 
 # Label Password
 label_pass = Label(text='Password:')
-label_pass.grid(column=0, row=3)
+label_pass.grid(column=0, row=4)
 
 entry_pass = Entry(width=35)
-entry_pass.grid(column=1, row=3, columnspan=2, padx=5, pady=5)
+entry_pass.grid(column=1, row=4, columnspan=2, padx=5, pady=5)
 
 # Add Button
 add_button = Button(text='Add', width=30, command=save_pass)
-add_button.grid(column=1, row=5)
+add_button.grid(column=1, row=6, padx=5, pady=5)
+
+# Search Button
+search_button = Button(text='Search', width=30, command=search)
+search_button.grid(column=1, row=2, pady=5, padx=5)
 
 # Generate password button
 pass_button = Button(text='Generate Password', width=30, command=pass_gen)
-pass_button.grid(column=1, row=4, padx=5, pady=5)
+pass_button.grid(column=1, row=5)
 
 windows.mainloop()
